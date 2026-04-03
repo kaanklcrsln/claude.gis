@@ -228,6 +228,24 @@ main {
 }
 
 #api-key-save:hover { background: #b55a38; }
+
+.github-link {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+
+.github-link:hover { opacity: 0.85; }
+
+.github-link img {
+  height: 18px;
+  width: 18px;
+  display: block;
+  filter: invert(1);
+}
+
 #api-key-save.connected {
   background: #c15f3c;
   color: var(--teal);

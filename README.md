@@ -1,31 +1,31 @@
 # CLAUDE.GIS
 
-AI-powered WebGIS. Haritaya çizin, Copilot analiz etsin.
+AI-powered WebGIS. Draw on the map, let Copilot analyze it.
 
-## Kurulum
+## Setup
 
 ```bash
 npm install
 npm start
 ```
 
-`http://localhost:3000` → Claude API anahtarını girin → haritayı kullanın.
+`http://localhost:3000` → Enter your Claude API key → use the map.
 
-## Araçlar
+## Tools
 
 | | |
 |---|---|
-| `◉` | Nokta |
-| `⬡` | Poligon — çift tık ile bitir |
-| `╱` | Çizgi — çift tık ile bitir |
-| `⌖` | Mesafe ölçüm |
-| `⌫` | Temizle |
+| `◉` | Point |
+| `⬡` | Polygon — double-click to finish |
+| `╱` | Line — double-click to finish |
+| `⌖` | Measure distance |
+| `⌫` | Clear all |
 
-## Yapı
+## Structure
 
 ```
 backend/server.js   — Express + Claude API proxy
 frontend/index.html — Layout
-frontend/app.js     — Harita & chat mantığı
-assets/style.css    — Stiller
+frontend/app.js     — Map & chat logic
+assets/style.css    — Styles
 ```
