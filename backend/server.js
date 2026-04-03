@@ -7,7 +7,9 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
+// serve assets both at /assets (absolute) and assets/ (relative, for GH Pages parity)
 app.use('/assets', express.static(path.join(__dirname, '../assets')));
+app.use('/frontend/assets', express.static(path.join(__dirname, '../assets')));
 
 app.post('/api/chat', async (req, res) => {
   const { message, apiKey, context, history } = req.body;

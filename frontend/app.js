@@ -2,6 +2,11 @@
    CLAUDE.GIS — GeoAI Copilot Frontend
    ───────────────────────────────────────────────────────── */
 
+// ── Mode detection ────────────────────────────────────────
+// On GitHub Pages → call Anthropic directly (no backend)
+// On localhost   → proxy through backend/server.js
+const IS_STATIC = !['localhost', '127.0.0.1'].includes(window.location.hostname);
+
 // ── State ────────────────────────────────────────────────
 const state = {
   apiKey: localStorage.getItem('cgis_key') || '',
@@ -89,19 +94,16 @@ document.addEventListener('keydown', e => {
 });
 
 function activateTool(tool) {
-  // Disable existing draw
   if (state.drawHandler) {
     state.drawHandler.disable();
     state.drawHandler = null;
   }
-  // Remove point click listener
   if (state.pointClickHandler) {
     map.off('click', state.pointClickHandler);
     state.pointClickHandler = null;
   }
 
   state.activeTool = tool;
-
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById(`tool-${tool}`);
   if (btn) btn.classList.add('active');
@@ -110,10 +112,7 @@ function activateTool(tool) {
 
   if (tool === 'point') {
     container.style.cursor = 'crosshair';
-    state.pointClickHandler = e => {
-      placePoint(e.latlng);
-      activateTool('pointer');
-    };
+    state.pointClickHandler = e => { placePoint(e.latlng); activateTool('pointer'); };
     map.on('click', state.pointClickHandler);
 
   } else if (tool === 'polygon') {
@@ -161,14 +160,10 @@ map.on(L.Draw.Event.CREATED, e => {
       coordinates: lls.map(ll => [+ll.lat.toFixed(6), +ll.lng.toFixed(6)])
     };
     state.geometries.push(geom);
-
     layer.setStyle({ color: '#9a4c30', fillColor: '#9a4c30', fillOpacity: 0.12, weight: 1.5 });
-    layer.bindPopup(
-      `<b>Polygon</b><br>${formatArea(area)}<br>${lls.length} vertices`
-    );
+    layer.bindPopup(`<b>Polygon</b><br>${formatArea(area)}<br>${lls.length} vertices`);
     layers.polygons.addLayer(layer);
     updateContextBar();
-
     if (state.apiKey) autoAnalyze(geom);
 
   } else if (layerType === 'polyline') {
@@ -187,12 +182,10 @@ map.on(L.Draw.Event.CREATED, e => {
         coordinates: lls.map(ll => [+ll.lat.toFixed(6), +ll.lng.toFixed(6)])
       };
       state.geometries.push(geom);
-
       layer.setStyle({ color: '#9a4c30', weight: 1.5, opacity: 0.9 });
       layer.bindPopup(`<b>Line</b><br>${formatDist(dist)}<br>${lls.length - 1} segments`);
       layers.lines.addLayer(layer);
       updateContextBar();
-
       if (state.apiKey) autoAnalyze(geom);
     }
   }
@@ -212,22 +205,15 @@ map.on('draw:drawstop', () => {
 
 // ── Place Point ───────────────────────────────────────────
 function placePoint(latlng) {
-  const geom = {
-    type: 'point',
-    lat: +latlng.lat.toFixed(6),
-    lng: +latlng.lng.toFixed(6)
-  };
+  const geom = { type: 'point', lat: +latlng.lat.toFixed(6), lng: +latlng.lng.toFixed(6) };
   state.geometries.push(geom);
 
-  const marker = L.circleMarker(latlng, {
-    radius: 5,
-    fillColor: '#9a4c30',
-    color: '#1E2122',
-    weight: 2,
-    fillOpacity: 1
-  });
-  marker.bindPopup(`<b>Point</b><br>${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`);
-  layers.points.addLayer(marker);
+  L.circleMarker(latlng, {
+    radius: 5, fillColor: '#9a4c30', color: '#1E2122', weight: 2, fillOpacity: 1
+  })
+    .bindPopup(`<b>Point</b><br>${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`)
+    .addTo(layers.points);
+
   updateContextBar();
 }
 
@@ -272,20 +258,19 @@ function formatDist(m) {
 
 // ── Context Bar ───────────────────────────────────────────
 function updateContextBar() {
-  const n = state.geometries.length;
   const el = document.getElementById('ctx-text');
-  if (n === 0) {
+  if (state.geometries.length === 0) {
     el.textContent = 'No geometry on map';
-  } else {
-    const pts = state.geometries.filter(g => g.type === 'point').length;
-    const pols = state.geometries.filter(g => g.type === 'polygon').length;
-    const lns = state.geometries.filter(g => g.type === 'line').length;
-    const parts = [];
-    if (pts)  parts.push(`${pts} point${pts > 1 ? 's' : ''}`);
-    if (pols) parts.push(`${pols} polygon${pols > 1 ? 's' : ''}`);
-    if (lns)  parts.push(`${lns} line${lns > 1 ? 's' : ''}`);
-    el.textContent = parts.join(' · ') + ' — in AI context';
+    return;
   }
+  const pts  = state.geometries.filter(g => g.type === 'point').length;
+  const pols = state.geometries.filter(g => g.type === 'polygon').length;
+  const lns  = state.geometries.filter(g => g.type === 'line').length;
+  const parts = [];
+  if (pts)  parts.push(`${pts} point${pts  > 1 ? 's' : ''}`);
+  if (pols) parts.push(`${pols} polygon${pols > 1 ? 's' : ''}`);
+  if (lns)  parts.push(`${lns} line${lns  > 1 ? 's' : ''}`);
+  el.textContent = parts.join(' · ') + ' — in AI context';
 }
 
 // ── Auto Analyze ──────────────────────────────────────────
@@ -299,12 +284,26 @@ async function autoAnalyze(geom) {
   if (prompt) await sendToAI(prompt, false);
 }
 
-// ── Chat ──────────────────────────────────────────────────
+// ── Chat Helpers ──────────────────────────────────────────
 function getContext() {
-  return {
-    geometryCount: state.geometries.length,
-    geometries: state.geometries.slice(-8)
-  };
+  return { geometryCount: state.geometries.length, geometries: state.geometries.slice(-8) };
+}
+
+function buildSystemPrompt() {
+  const ctx = getContext();
+  return `You are GeoAI Copilot inside CLAUDE.GIS. You are a GIS expert assistant.
+Your role: analyze map geometries, perform coordinate conversions, calculate area/distance, explain buffer analysis.
+Always respond in English, concisely and precisely. Be technical but clear.
+
+Current map state:
+- Total geometries: ${ctx.geometryCount}
+- Recent geometries: ${JSON.stringify(ctx.geometries, null, 2)}
+
+Geometry reference:
+• point → lat/lng coordinates
+• polygon → area (m²/hectares) and coordinate list
+• line → length (m/km) and coordinate list
+• measurement → temporary measurement line`;
 }
 
 function appendMessage(role, content) {
@@ -317,13 +316,9 @@ function appendMessage(role, content) {
 
   const body = document.createElement('div');
   body.className = 'msg-content';
-
   if (content) {
-    try {
-      body.innerHTML = marked.parse(content);
-    } catch {
-      body.textContent = content;
-    }
+    try { body.innerHTML = marked.parse(content); }
+    catch { body.textContent = content; }
   }
 
   wrap.appendChild(label);
@@ -358,6 +353,50 @@ function scrollChat() {
   el.scrollTop = el.scrollHeight;
 }
 
+// ── SSE stream parser (shared) ────────────────────────────
+async function readStream(response, msgBody, isDirectAPI) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  let fullText = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const raw = line.slice(6).trim();
+      if (raw === '[DONE]') break;
+      try {
+        const parsed = JSON.parse(raw);
+
+        // Direct Anthropic API format
+        if (isDirectAPI && parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+          fullText += parsed.delta.text;
+        }
+        // Backend proxy format
+        if (!isDirectAPI && parsed.text) {
+          fullText += parsed.text;
+        }
+
+        if (fullText) {
+          try { msgBody.innerHTML = marked.parse(fullText); }
+          catch { msgBody.textContent = fullText; }
+          scrollChat();
+        }
+      } catch { /* skip malformed chunks */ }
+    }
+  }
+
+  return fullText;
+}
+
+// ── Send to AI ────────────────────────────────────────────
 async function sendToAI(prompt, showUser = true) {
   if (!state.apiKey) {
     appendMessage('assistant', 'Please enter your Claude API key first.');
@@ -369,77 +408,68 @@ async function sendToAI(prompt, showUser = true) {
   const typingEl = showTyping();
   const sendBtn = document.getElementById('send-btn');
   sendBtn.disabled = true;
-
-  // Add to history
   state.chatHistory.push({ role: 'user', content: prompt });
 
   try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: prompt,
-        apiKey: state.apiKey,
-        context: getContext(),
-        history: state.chatHistory.slice(-10)
-      })
-    });
+    let response;
+
+    if (IS_STATIC) {
+      // ── Direct Anthropic API (GitHub Pages) ──────────────
+      const messages = [
+        ...state.chatHistory.slice(-10, -1),
+        { role: 'user', content: prompt }
+      ];
+
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': state.apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-opus-4-6',
+          max_tokens: 1024,
+          system: buildSystemPrompt(),
+          messages,
+          stream: true
+        })
+      });
+    } else {
+      // ── Backend proxy (localhost) ─────────────────────────
+      response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: prompt,
+          apiKey: state.apiKey,
+          context: getContext(),
+          history: state.chatHistory.slice(-10)
+        })
+      });
+    }
 
     typingEl.remove();
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Server error' }));
-      const msg = err.error || 'Unknown error';
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const msg = err.error?.message || err.error || `HTTP ${response.status}`;
       appendMessage('assistant', `**Error:** ${msg}`);
       state.chatHistory.pop();
       return;
     }
 
     const msgBody = appendMessage('assistant', '');
-    let fullText = '';
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buf += decoder.decode(value, { stream: true });
-      const lines = buf.split('\n');
-      buf = lines.pop();
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const raw = line.slice(6).trim();
-        if (raw === '[DONE]') break;
-        try {
-          const parsed = JSON.parse(raw);
-          if (parsed.text) {
-            fullText += parsed.text;
-            try {
-              msgBody.innerHTML = marked.parse(fullText);
-            } catch {
-              msgBody.textContent = fullText;
-            }
-            scrollChat();
-          }
-          if (parsed.error) {
-            msgBody.textContent = `Error: ${parsed.error}`;
-          }
-        } catch { /* ignore malformed chunks */ }
-      }
-    }
+    const fullText = await readStream(response, msgBody, IS_STATIC);
 
     if (fullText) {
       state.chatHistory.push({ role: 'assistant', content: fullText });
-      // Keep history manageable
       if (state.chatHistory.length > 20) state.chatHistory = state.chatHistory.slice(-20);
     }
 
   } catch (err) {
-    typingEl.remove();
+    document.getElementById('_typing')?.remove();
     appendMessage('assistant', `**Connection error:** ${err.message}`);
     state.chatHistory.pop();
   } finally {
@@ -456,10 +486,7 @@ chatInput.addEventListener('input', () => {
 });
 
 chatInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    handleSend();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
 });
 
 document.getElementById('send-btn').addEventListener('click', handleSend);
