@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude GIS - Geospatial Intelligence</title>
+  <link rel="icon" type="image/png" href="assets/claude-color.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,opsz,wght@0,5..1200,400..900;1,5..1200,400..900&display=swap" rel="stylesheet">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+
+  <!-- App -->
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header>
+    <img src="assets/claude-color.png" alt="CLAUDE.GIS" class="logo-img">
+    <div class="header-meta">
+      <span id="coord-display">—</span>
+    </div>
+  </header>
+
+  <!-- ── Main ── -->
+  <main>
+
+    <!-- ── Map Panel ── -->
+    <section class="map-panel">
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button class="tool-btn active" id="tool-pointer" title="Select (Esc)">
+          <span class="tool-icon">⊹</span>
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="tool-point" title="Add Point">
+          <span class="tool-icon">◉</span>
+        </button>
+        <button class="tool-btn" id="tool-polygon" title="Draw Polygon (double-click to finish)">
+          <span class="tool-icon">⬡</span>
+        </button>
+        <button class="tool-btn" id="tool-line" title="Draw Line (double-click to finish)">
+          <span class="tool-icon">╱</span>
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="tool-measure" title="Measure Distance">
+          <span class="tool-icon">⌖</span>
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn danger" id="tool-clear" title="Clear All">
+          <span class="tool-icon">⌫</span>
+        </button>
+      </div>
+
+      <!-- Layers -->
+      <div class="layer-panel">
+        <div class="layer-title">Layers</div>
+        <label class="layer-item">
+          <input type="checkbox" id="layer-points" checked>
+          <span>Points</span>
+        </label>
+        <label class="layer-item">
+          <input type="checkbox" id="layer-polygons" checked>
+          <span>Polygons</span>
+        </label>
+        <label class="layer-item">
+          <input type="checkbox" id="layer-lines" checked>
+          <span>Lines</span>
+        </label>
+      </div>
+
+      <!-- Map -->
+      <div id="map"></div>
+    </section>
+
+    <!-- ── Chat Panel ── -->
+    <section class="chat-panel">
+
+      <!-- API Key -->
+      <div class="api-key-bar">
+        <input type="password" id="api-key-input" placeholder="sk-ant-... API Key" autocomplete="off">
+        <button id="api-key-save">Connect</button>
+        <a href="https://github.com/kaanklcrsln/claude.gis" target="_blank" rel="noopener" class="github-link">
+          <img src="assets/github-logo.png" alt="GitHub">
+        </a>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages" id="messages">
+        <div class="message assistant">
+          <div class="msg-label"></div>
+          <div class="msg-content">
+            Map the geometry; points, polygons, and lines are automatically transferred to my context. You can ask for coordinate conversion, area calculation, and buffer analysis.          </div>
+        </div>
+      </div>
+
+      <!-- Context bar -->
+      <div class="context-bar" id="context-bar">
+        <span class="ctx-dot"></span>
+        <span id="ctx-text">No geometry on map</span>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button class="qa-btn" data-prompt="Calculate and summarize the area of all polygons on the map.">Calculate Area</button>
+        <button class="qa-btn" data-prompt="Calculate the total length of all lines on the map.">Measure Distance</button>
+        <button class="qa-btn" data-prompt="Convert the point coordinates on the map from WGS84 to UTM Zone 36N.">Coordinate Convert</button>
+        <button class="qa-btn" data-prompt="Explain how to create a 500m buffer around the geometries on the map.">Buffer</button>
+      </div>
+
+      <!-- Input -->
+      <div class="input-area">
+        <textarea id="chat-input" placeholder="How can I help you today?" rows="1"></textarea>
+        <button id="send-btn">→</button>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
