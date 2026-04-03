@@ -1,4 +1,3 @@
-# CLAUDE.GIS
 
 Claude-integrated WebGIS. Draw on the map, let Copilot analyze it.
 
