@@ -1,6 +1,8 @@
 # CLAUDE.GIS
 
-AI-powered WebGIS. Draw on the map, let Copilot analyze it.
+Claude-integrated WebGIS. Draw on the map, let Copilot analyze it.
+
+<img width="1420" height="839" alt="Screenshot 2026-04-03 at 16 03 01" src="https://github.com/user-attachments/assets/32e63c27-9c07-4ff6-bc14-81127d40e1b2" />
 
 ## Setup
 
@@ -8,6 +10,7 @@ AI-powered WebGIS. Draw on the map, let Copilot analyze it.
 npm install
 npm start
 ```
+
 
 `http://localhost:3000` → Enter your Claude API key → use the map.
 
